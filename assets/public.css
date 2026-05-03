@@ -1,0 +1,1022 @@
+/**
+ * Feedico Sync — front-end shortcodes (.feedico-pub).
+ * Loaded only when a shortcode runs (enqueue from PHP).
+ */
+
+.feedico-pub {
+	--fp-accent: #2271b1;
+	--fp-accent2: #135e96;
+	--fp-ok: #00a32a;
+	--fp-border: #dcdcde;
+	--fp-text: #1d2327;
+	--fp-muted: #50575e;
+	/* Coupon card — refined palette */
+	--fp-coupon-ink: #0c0f14;
+	--fp-coupon-sub: #5e6670;
+	--fp-coupon-muted: #8b939e;
+	--fp-coupon-line: rgba(12, 15, 20, 0.08);
+	--fp-coupon-line-strong: rgba(12, 15, 20, 0.12);
+	--fp-coupon-surface: #fcfcfd;
+	--fp-coupon-ring-a: #1e3a5f;
+	--fp-coupon-ring-b: #0f2744;
+	--fp-coupon-cta: #142339;
+	--fp-coupon-cta-hover: #1a2d4a;
+	--fp-coupon-highlight: #c4a035;
+	box-sizing: border-box;
+	color: var(--fp-text);
+	line-height: 1.5;
+	margin: 1.5rem 0;
+	font-size: 16px;
+}
+
+.feedico-pub *,
+.feedico-pub *::before,
+.feedico-pub *::after {
+	box-sizing: inherit;
+}
+
+.feedico-pub .screen-reader-text {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+	word-wrap: normal !important;
+}
+
+/* Search row */
+.feedico-pub-search {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	margin-bottom: 1.25rem;
+	max-width: 36rem;
+}
+
+.feedico-pub-search input[type="search"] {
+	flex: 1 1 200px;
+	min-width: 0;
+	padding: 0.55rem 0.75rem;
+	border: 1px solid #8c8f94;
+	border-radius: 6px;
+	font-size: 1rem;
+}
+
+.feedico-pub-search-btn {
+	padding: 0.55rem 1rem;
+	border-radius: 6px;
+	border: 1px solid var(--fp-accent2);
+	background: var(--fp-accent);
+	color: #fff;
+	font-size: 0.95rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.feedico-pub-search-btn:hover,
+.feedico-pub-search-btn:focus {
+	background: var(--fp-accent2);
+	color: #fff;
+}
+
+/* Grid */
+.feedico-pub-grid {
+	display: grid;
+	gap: 1.15rem;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.feedico-pub-grid--coupons {
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 1.75rem;
+	align-items: start;
+}
+
+/* Cards */
+.feedico-pub-card {
+	background: #fff;
+	border: 1px solid var(--fp-border);
+	border-radius: 8px;
+	padding: 1.1rem 1.15rem;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.feedico-pub-card:hover {
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+	border-color: #c3c4c7;
+}
+
+.feedico-pub-card--coupon {
+	padding: 0;
+	overflow: hidden;
+	position: relative;
+	min-width: 0;
+	border: 1px solid var(--fp-coupon-line-strong);
+	border-radius: 10px;
+	box-shadow:
+		0 1px 2px rgba(12, 15, 20, 0.04),
+		0 8px 24px rgba(12, 15, 20, 0.06),
+		0 24px 48px -24px rgba(15, 23, 42, 0.12);
+	background: linear-gradient(165deg, #ffffff 0%, var(--fp-coupon-surface) 48%, #ffffff 100%);
+	transition:
+		box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		border-color 0.25s ease;
+}
+
+.feedico-pub-card--coupon::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	z-index: 2;
+	border-radius: 10px 10px 0 0;
+	background: linear-gradient(
+		90deg,
+		var(--fp-coupon-ring-b) 0%,
+		var(--fp-coupon-ring-a) 38%,
+		var(--fp-coupon-highlight) 100%
+	);
+	opacity: 0.92;
+	pointer-events: none;
+}
+
+.feedico-pub-card--coupon:hover {
+	box-shadow:
+		0 2px 4px rgba(12, 15, 20, 0.04),
+		0 16px 40px rgba(12, 15, 20, 0.08),
+		0 40px 64px -32px rgba(15, 23, 42, 0.16);
+	transform: translateY(-3px);
+	border-color: rgba(30, 58, 95, 0.18);
+}
+.feedico-pub-card-title {
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 600;
+	line-height: 1.35;
+	letter-spacing: -0.01em;
+}
+
+.feedico-pub-badge {
+	display: inline-block;
+	align-self: flex-start;
+	font-size: 0.65rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	color: var(--fp-accent);
+	border: 1px solid rgba(34, 113, 177, 0.2);
+}
+
+.feedico-pub-merchant-couponline {
+	margin: 0.35rem 0 0;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	color: var(--fp-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.feedico-pub-card-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 0.75rem;
+	margin-top: auto;
+	padding-top: 0.35rem;
+}
+
+.feedico-pub-link {
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--fp-accent);
+	text-decoration: none;
+	border-bottom: 1px solid transparent;
+}
+
+.feedico-pub-link:hover,
+.feedico-pub-link:focus {
+	border-bottom-color: var(--fp-accent);
+}
+
+/* Coupon media + body (deal-style layout) */
+.feedico-pub-coupon-img-wrap {
+	aspect-ratio: 16 / 9;
+	background:
+		radial-gradient(ellipse 80% 60% at 50% 0%, rgba(30, 58, 95, 0.09) 0%, transparent 55%),
+		linear-gradient(165deg, #eef2f7 0%, #e2e8f0 45%, #dce3ec 100%);
+	overflow: hidden;
+	position: relative;
+	isolation: isolate;
+}
+
+.feedico-pub-coupon-img-wrap::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, transparent 45%, rgba(12, 15, 20, 0.08) 100%);
+	pointer-events: none;
+	z-index: 1;
+}
+
+.feedico-pub-coupon-img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.feedico-pub-card--coupon:hover .feedico-pub-coupon-img {
+	transform: scale(1.035);
+}
+
+.feedico-pub-coupon-body {
+	padding: 1.2rem 1.25rem 1.35rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	flex: 1;
+	min-width: 0;
+	position: relative;
+}
+
+.feedico-pub-coupon-main {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+}
+
+.feedico-pub-coupon-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.feedico-pub-coupon-title {
+	margin: 0;
+	flex: 1;
+	min-width: 0;
+	font-size: 1.0625rem;
+	font-weight: 700;
+	line-height: 1.32;
+	letter-spacing: -0.022em;
+	color: var(--fp-coupon-ink);
+	font-feature-settings: "kern" 1, "liga" 1;
+}
+
+.feedico-pub-coupon-pct-ring {
+	flex-shrink: 0;
+	width: 3.25rem;
+	height: 3.25rem;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(
+		145deg,
+		var(--fp-coupon-ring-a) 0%,
+		var(--fp-coupon-ring-b) 52%,
+		#0a1628 100%
+	);
+	color: #fff;
+	box-shadow:
+		0 4px 14px rgba(15, 39, 68, 0.35),
+		inset 0 1px 0 rgba(255, 255, 255, 0.2),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+	border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.feedico-pub-coupon-pct-inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+
+.feedico-pub-coupon-pct-num {
+	font-size: 1.2rem;
+	font-weight: 900;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.03em;
+}
+
+.feedico-pub-coupon-pct-suffix {
+	font-size: 0.65rem;
+	font-weight: 800;
+	opacity: 0.95;
+	margin-top: 0.1rem;
+}
+
+.feedico-pub-coupon-network {
+	margin: 0;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.09em;
+	color: var(--fp-coupon-muted);
+	line-height: 1.4;
+}
+
+.feedico-pub-coupon-tagline {
+	margin: 0;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	color: var(--fp-coupon-ring-a);
+	line-height: 1.4;
+}
+
+.feedico-pub-desc {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--fp-coupon-sub);
+	line-height: 1.62;
+	letter-spacing: 0.01em;
+}
+
+.feedico-pub-coupon-validity {
+	margin: 0.1rem 0 0;
+}
+
+.feedico-pub-coupon-validity-pill {
+	display: inline-flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0.2rem 0.4rem;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-transform: none;
+	letter-spacing: 0.01em;
+	padding: 0.45rem 0.85rem;
+	border-radius: 6px;
+	box-shadow: 0 1px 2px rgba(12, 15, 20, 0.03);
+	backdrop-filter: blur(6px);
+}
+
+.feedico-pub-coupon-validity-label {
+	font-size: 0.625rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--fp-coupon-muted);
+}
+
+.feedico-pub-coupon-validity-date {
+	font-weight: 700;
+	color: var(--fp-coupon-ink);
+	font-variant-numeric: tabular-nums;
+}
+
+.feedico-pub-coupon-validity-pill--soft {
+	background: rgba(236, 253, 245, 0.85);
+	color: #0d6948;
+	border-color: rgba(13, 105, 72, 0.15);
+}
+
+.feedico-pub-coupon-share {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 0.5rem 0.75rem;
+	margin-top: 0.2rem;
+	padding: 0.7rem 0 0;
+	border-top: 1px solid rgba(12, 15, 20, 0.065);
+}
+
+.feedico-pub-coupon-share-label {
+	margin: 0;
+	font-size: 0.625rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.14em;
+	color: #8b919a;
+	flex-shrink: 0;
+}
+
+.feedico-pub-coupon-share-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin-left: auto;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.feedico-pub-share-btn-inner {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.35rem;
+}
+
+.feedico-pub-share-icon {
+	display: block;
+	width: 0.95rem;
+	height: 0.95rem;
+	flex-shrink: 0;
+}
+
+.feedico-pub-share-btn-text {
+	line-height: 1;
+}
+
+.feedico-pub-share-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2rem;
+	padding: 0.35rem 0.75rem;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	line-height: 1.2;
+	letter-spacing: 0.03em;
+	border-radius: 4px;
+	background: rgba(255, 255, 255, 0.85);
+	color: #3a3f47;
+	text-decoration: none !important;
+	border: 1px solid rgba(12, 15, 20, 0.1);
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+	transition:
+		background 0.18s ease,
+		border-color 0.18s ease,
+		color 0.18s ease,
+		box-shadow 0.18s ease;
+}
+
+.feedico-pub-share-btn:hover,
+.feedico-pub-share-btn:focus {
+	background: #fff;
+	border-color: rgba(12, 15, 20, 0.16);
+	color: #181b20;
+	box-shadow: 0 2px 8px rgba(12, 15, 20, 0.06);
+}
+
+.feedico-pub-share-btn:focus-visible {
+	outline: 2px solid var(--fp-coupon-ring-a);
+	outline-offset: 2px;
+}
+
+.feedico-pub-share-btn--x {
+	min-width: 2.25rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+}
+
+.feedico-pub-share-btn--fb {
+	padding-left: 0.65rem;
+	padding-right: 0.65rem;
+}
+
+.feedico-pub-code-elite {
+	margin-top: 0.35rem;
+	border-radius: 4px;
+	border: 1px solid rgba(12, 15, 20, 0.1);
+	background: linear-gradient(165deg, #fdfcfa 0%, #f5f4f0 55%, #faf9f7 100%);
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.88) inset,
+		0 10px 28px rgba(12, 15, 20, 0.05);
+	overflow: hidden;
+}
+
+.feedico-pub-code-details--deal {
+	margin: 0;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	align-self: stretch;
+	box-sizing: border-box;
+	border: none;
+	background: transparent;
+	overflow: visible;
+	box-shadow: none;
+}
+
+.feedico-pub-code-summary--elite {
+	list-style: none;
+	display: flex !important;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.65rem;
+	width: 100%;
+	padding: 0.85rem 1rem !important;
+	margin: 0;
+	cursor: pointer;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	line-height: 1.3;
+	color: #242830 !important;
+	background: transparent !important;
+	border: none;
+	border-radius: 0;
+	border-bottom: 1px solid rgba(12, 15, 20, 0.07);
+	box-shadow: none !important;
+	letter-spacing: 0.01em;
+	user-select: none;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+
+.feedico-pub-code-summary--elite::-webkit-details-marker {
+	display: none;
+}
+
+.feedico-pub-code-summary--elite:hover {
+	background: rgba(255, 255, 255, 0.55) !important;
+	color: #12151a !important;
+	filter: none;
+}
+
+.feedico-pub-code-summary--elite:focus {
+	outline: none;
+	background: rgba(255, 255, 255, 0.65) !important;
+}
+
+.feedico-pub-code-details--deal[open] .feedico-pub-code-summary--elite {
+	background: rgba(255, 255, 255, 0.35) !important;
+	border-bottom-color: rgba(12, 15, 20, 0.09);
+}
+
+.feedico-pub-code-details--deal[open] .feedico-pub-code-summary--elite:hover,
+.feedico-pub-code-details--deal[open] .feedico-pub-code-summary--elite:focus {
+	background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.feedico-pub-code-summary--elite:focus-visible {
+	box-shadow: inset 0 0 0 2px rgba(30, 58, 95, 0.35) !important;
+}
+
+.feedico-pub-code-elite-label {
+	font-size: 0.625rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.16em;
+	color: #6d737c !important;
+	white-space: nowrap;
+}
+
+.feedico-pub-code-elite-action {
+	font-weight: 600;
+	color: #1e2838 !important;
+	flex: 1;
+	text-align: right;
+	letter-spacing: 0.02em;
+}
+
+.feedico-pub-code-details--deal .feedico-pub-code-summary--elite .feedico-pub-code-sum-txt {
+	color: inherit !important;
+}
+
+/* Toggle labels — explicit so broken CSS elsewhere cannot stack them */
+.feedico-pub-code-details--deal .feedico-pub-code-sum-txt--open {
+	display: none !important;
+}
+
+.feedico-pub-code-details--deal[open] .feedico-pub-code-sum-txt--closed {
+	display: none !important;
+}
+
+.feedico-pub-code-details--deal[open] .feedico-pub-code-sum-txt--open {
+	display: inline !important;
+}
+
+.feedico-pub-code-elite-chevron {
+	flex-shrink: 0;
+	width: 0.45rem;
+	height: 0.45rem;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(-45deg);
+	opacity: 0.4;
+	margin-top: -0.15rem;
+	transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+.feedico-pub-code-details--deal[open] .feedico-pub-code-elite-chevron {
+	transform: rotate(135deg);
+	opacity: 0.55;
+}
+
+.feedico-pub-code-details--deal:not([open]) .feedico-pub-code-panel {
+	display: none;
+}
+
+.feedico-pub-code-panel--elite {
+	padding: 1rem 1rem 1.1rem !important;
+	margin: 0;
+	background: #fff;
+}
+
+.feedico-pub-code-actions {
+	margin-top: 0.55rem;
+}
+
+.feedico-pub-copy-code {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0.55rem 0.85rem;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	font-family: inherit;
+	line-height: 1.35;
+	cursor: pointer;
+	color: var(--fp-coupon-ink);
+	background: #fff;
+	border: 1px solid var(--fp-coupon-line-strong);
+	border-radius: 4px;
+	transition:
+		background 0.2s ease,
+		color 0.2s ease,
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.feedico-pub-code-panel--elite .feedico-pub-copy-code {
+	background: transparent;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.14em;
+	color: #2c2f36;
+	border-color: rgba(12, 15, 20, 0.22);
+	padding: 0.6rem 0.9rem;
+}
+
+.feedico-pub-copy-code:hover:not(:disabled),
+.feedico-pub-copy-code:focus:not(:disabled) {
+	background: var(--fp-coupon-cta);
+	color: #fff;
+	border-color: var(--fp-coupon-cta);
+	outline: none;
+	box-shadow: 0 4px 14px rgba(12, 15, 20, 0.12);
+}
+
+.feedico-pub-code-panel--elite .feedico-pub-copy-code:hover:not(:disabled),
+.feedico-pub-code-panel--elite .feedico-pub-copy-code:focus:not(:disabled) {
+	background: #1e2430;
+	color: #faf9f7;
+	border-color: #1e2430;
+	box-shadow: 0 4px 16px rgba(12, 15, 20, 0.12);
+}
+
+.feedico-pub-copy-code:focus-visible {
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--fp-coupon-ring-a);
+}
+
+.feedico-pub-copy-code:disabled {
+	cursor: wait;
+	opacity: 0.92;
+}
+
+.feedico-pub-code-details--deal .feedico-pub-code-value {
+	display: block;
+	margin: 0;
+	background: #f3f1ee;
+	color: #14120f;
+	border: 1px solid rgba(12, 15, 20, 0.1);
+	font-size: 1.125rem;
+	font-weight: 600;
+	font-family: ui-monospace, "SF Mono", "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+	letter-spacing: 0.1em;
+	text-align: center;
+	padding: 0.9rem 1rem;
+	border-radius: 4px;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.65),
+		inset 0 -2px 4px rgba(12, 15, 20, 0.04);
+	word-break: break-word;
+	cursor: default;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.feedico-pub-coupon-apply-link {
+	display: block;
+	margin-top: 0.55rem;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-align: center;
+	text-decoration: none !important;
+	color: var(--fp-coupon-ring-a) !important;
+	border: 0;
+	padding: 0;
+	background: none;
+	box-shadow: none;
+	letter-spacing: 0.01em;
+}
+
+.feedico-pub-coupon-apply-link:hover,
+.feedico-pub-coupon-apply-link:focus {
+	text-decoration: underline !important;
+	color: var(--fp-coupon-cta) !important;
+}
+
+.feedico-pub-cta--deal-solo {
+	margin-top: 0;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	padding: 0.62rem 1rem !important;
+	font-size: 0.875rem !important;
+	font-weight: 600 !important;
+	line-height: 1.35 !important;
+	border-radius: 8px !important;
+	text-align: center;
+	text-decoration: none !important;
+	background: linear-gradient(
+		180deg,
+		var(--fp-coupon-ring-a) 0%,
+		var(--fp-coupon-cta) 55%,
+		#0a1628 100%
+	) !important;
+	color: #fff !important;
+	border: 1px solid rgba(255, 255, 255, 0.14) !important;
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.12) inset,
+		0 6px 20px rgba(15, 39, 68, 0.28);
+	transition:
+		filter 0.2s ease,
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.feedico-pub-cta--deal-solo:hover,
+.feedico-pub-cta--deal-solo:focus {
+	filter: brightness(1.06);
+	color: #fff !important;
+	transform: translateY(-1px);
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.15) inset,
+		0 10px 28px rgba(15, 39, 68, 0.35);
+}
+
+.feedico-pub-cta--deal-solo:active {
+	transform: translateY(0);
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.1) inset,
+		0 4px 14px rgba(15, 39, 68, 0.25);
+}
+
+.feedico-pub-cta--secondary {
+	margin-top: 0;
+	background: #fff !important;
+	color: var(--fp-accent2) !important;
+	border: 2px solid var(--fp-accent) !important;
+	box-shadow: none;
+	text-align: center;
+	width: 100%;
+	justify-content: center;
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+}
+
+.feedico-pub-cta--secondary:hover,
+.feedico-pub-cta--secondary:focus {
+	background: #f0f6fc !important;
+	color: var(--fp-accent2) !important;
+	border-color: var(--fp-accent2) !important;
+}
+
+/* Legacy / standalone coupon list (non-deal wrapper) */
+.feedico-pub-code-details:not(.feedico-pub-code-details--deal) {
+	margin: 0.15rem 0 0;
+	border-radius: 6px;
+	border: 1px dashed rgba(34, 113, 177, 0.45);
+	background: linear-gradient(180deg, #f0f6fc 0%, #e8f2fa 100%);
+	overflow: hidden;
+}
+
+.feedico-pub-code-details:not(.feedico-pub-code-details--deal)[open] {
+	border-style: solid;
+	border-color: rgba(34, 113, 177, 0.35);
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(34, 113, 177, 0.12);
+}
+
+.feedico-pub-code-summary {
+	list-style: none;
+	cursor: pointer;
+	margin: 0;
+	padding: 0.65rem 0.85rem;
+	font-size: 0.88rem;
+	font-weight: 600;
+	color: var(--fp-accent2);
+	user-select: none;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.feedico-pub-code-summary::-webkit-details-marker {
+	display: none;
+}
+
+.feedico-pub-code-details:not(.feedico-pub-code-details--deal) .feedico-pub-code-summary:hover,
+.feedico-pub-code-details:not(.feedico-pub-code-details--deal) .feedico-pub-code-summary:focus {
+	background: rgba(255, 255, 255, 0.7);
+	outline: none;
+}
+
+.feedico-pub-code-summary:focus-visible {
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--fp-accent);
+}
+
+.feedico-pub-code-summary-inner {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+}
+
+.feedico-pub-code-chevron {
+	flex-shrink: 0;
+	width: 0.5rem;
+	height: 0.5rem;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: rotate(-45deg);
+	transition: transform 0.2s ease;
+	margin-top: -0.2rem;
+}
+
+.feedico-pub-code-details[open] .feedico-pub-code-chevron {
+	transform: rotate(45deg);
+	margin-top: 0.15rem;
+}
+
+.feedico-pub-code-sum-txt--open {
+	display: none;
+}
+
+.feedico-pub-code-details[open] .feedico-pub-code-sum-txt--closed {
+	display: none;
+}
+
+.feedico-pub-code-details[open] .feedico-pub-code-sum-txt--open {
+	display: inline;
+}
+
+.feedico-pub-code-panel {
+	padding: 0 0.85rem 0.85rem;
+}
+
+.feedico-pub-code-value {
+	display: block;
+	width: 100%;
+	font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+	font-size: 1.05rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-align: center;
+	padding: 0.7rem 0.85rem;
+	margin: 0;
+	background: linear-gradient(180deg, #f6f7f7 0%, #ececec 100%);
+	border: 1px solid var(--fp-border);
+	border-radius: 8px;
+	color: var(--fp-text);
+	word-break: break-all;
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-webkit-touch-callout: none;
+}
+
+.feedico-pub-meta {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--fp-muted);
+}
+
+.feedico-pub-cta {
+	display: inline-block;
+	margin-top: 0.35rem;
+	align-self: flex-start;
+	padding: 0.55rem 1rem;
+	border-radius: 6px;
+	background: var(--fp-accent);
+	color: #fff !important;
+	font-weight: 600;
+	font-size: 0.9rem;
+	text-decoration: none !important;
+	border: 1px solid var(--fp-accent2);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.feedico-pub-cta:hover,
+.feedico-pub-cta:focus {
+	background: var(--fp-accent2);
+	color: #fff !important;
+}
+
+.feedico-pub-empty {
+	margin: 0.5rem 0 0;
+	color: var(--fp-muted);
+	font-size: 0.95rem;
+}
+
+/* Pagination */
+.feedico-pub-nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem 1rem;
+	margin-top: 1.25rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--fp-border);
+}
+
+.feedico-pub-nav-link {
+	font-weight: 600;
+	color: var(--fp-accent);
+	text-decoration: none;
+}
+
+.feedico-pub-nav-link:hover,
+.feedico-pub-nav-link:focus {
+	text-decoration: underline;
+}
+
+.feedico-pub-nav-status {
+	font-size: 0.9rem;
+	color: var(--fp-muted);
+}
+
+/* Merchant landing ([feedico_merchant_page]) */
+.feedico-pub-merchant-page .feedico-pub-merchant-hero {
+	margin-bottom: 1.5rem;
+	padding-bottom: 1.25rem;
+	border-bottom: 1px solid var(--fp-border);
+	display: block;
+	overflow: visible;
+}
+
+.feedico-pub-merchant-page .feedico-pub-merchant-hero-title {
+	display: block;
+	width: 100%;
+	max-width: none;
+	margin: 0 0 0.5rem;
+	font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+	line-height: 1.25;
+	overflow: visible !important;
+	text-overflow: clip !important;
+	white-space: normal !important;
+	word-break: break-word;
+	hyphens: auto;
+}
+
+.feedico-pub-merchant-page .feedico-pub-merchant-hero-badge {
+	display: inline-block;
+	margin: 0.35rem 0 0;
+	vertical-align: middle;
+}
+
+.feedico-pub-merchant-page .feedico-pub-merchant-desc {
+	margin: 0.65rem 0 0;
+	max-width: 52rem;
+	color: var(--fp-text, inherit);
+	line-height: 1.5;
+	font-size: 0.95rem;
+}
+
+.feedico-pub-merchant-page .feedico-pub-merchant-hero-actions {
+	margin: 0.75rem 0 0;
+}
+
+.feedico-pub-merchant-page .feedico-pub-merchant-couponline {
+	margin: 0.5rem 0 0;
+	color: var(--fp-muted);
+	font-size: 0.95rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.feedico-pub-card--coupon,
+	.feedico-pub-coupon-img {
+		transition: none !important;
+	}
+
+	.feedico-pub-card--coupon:hover {
+		transform: none;
+	}
+
+	.feedico-pub-card--coupon:hover .feedico-pub-coupon-img {
+		transform: none;
+	}
+}

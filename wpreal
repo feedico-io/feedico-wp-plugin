@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Deploy this plugin tree to the local WordPress install (same as manual rsync deploy).
+# Usage: wpreal
+# Optional: WPREAL_DEST=/other/path wpreal
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEST="${WPREAL_DEST:-/var/www/wordpress/wp-content/plugins/feedico-sync}"
+
+sudo rsync -a --delete "$SCRIPT_DIR/" "$DEST/"
+sudo chown -R www-data:www-data "$DEST"
+
+echo "Deployed -> $DEST"
+grep -E "define\s*\(\s*'FEEDICO_SYNC_VERSION'" "$DEST/feedico-sync.php" || true
