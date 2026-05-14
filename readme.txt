@@ -4,7 +4,7 @@ Tags: coupons, merchants, affiliate, sync, feedico
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,6 +43,12 @@ Yes. Use the filter `feedico_sync_cpt_noindex` and return `false` to allow searc
 
 == Changelog ==
 
+= 1.7.7 =
+* Store only a slim dashboard snapshot in options so oversized API payloads no longer bloat `wp_options` or freeze the settings screen; one-time prune for legacy saves.
+* When selected networks change on Save settings, queue a full sync via WP-Cron (`feedico_sync_background`) instead of blocking the admin request; `spawn_cron()` nudges timely runs when the host allows it.
+* “Run sync now” also queues the same background job and returns immediately (log and banner update after the job finishes).
+* Clear the background hook on deactivate/uninstall alongside the recurring cron hook.
+
 = 1.7.0 =
 * Uninstall option to remove CPT posts when `FEEDICO_SYNC_DELETE_DATA` is true.
 * Privacy API exporter/eraser for stored settings.
@@ -52,6 +58,9 @@ Yes. Use the filter `feedico_sync_cpt_noindex` and return `false` to allow searc
 * `readme.txt`, `license.txt`, and docs for delete-data behavior.
 
 == Upgrade Notice ==
+
+= 1.7.7 =
+Background sync queue and smaller stored dashboard data. Ensure WP-Cron or a real server cron hits `wp-cron.php` if you rely on timely syncs on low-traffic sites.
 
 = 1.7.0 =
 Blocks, privacy hooks, SEO defaults for CPTs, and improved uninstall/documentation.

@@ -12,7 +12,7 @@ class Feedico_Sync_Job {
 	/**
 	 * Run full sync (merchants + coupons for selected network providers).
 	 *
-	 * @param string $trigger 'cron'|'manual'
+	 * @param string $trigger 'cron'|'manual'|'background'
 	 * @return array{ok:bool,message:string,stats?:array<string,int>}
 	 */
 	public static function run( string $trigger = 'manual' ): array {

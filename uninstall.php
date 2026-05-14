@@ -46,3 +46,4 @@ foreach ( $keys as $k ) {
 }
 
 wp_clear_scheduled_hook( 'feedico_sync_cron' );
+wp_unschedule_hook( 'feedico_sync_background' );

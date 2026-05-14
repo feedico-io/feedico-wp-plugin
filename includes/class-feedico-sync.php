@@ -28,6 +28,12 @@ class Feedico_Sync_Plugin {
 				Feedico_Sync_Job::run( 'cron' );
 			}
 		);
+		add_action(
+			'feedico_sync_background',
+			static function () {
+				Feedico_Sync_Job::run( 'background' );
+			}
+		);
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedules' ) );
 	}
 
@@ -44,6 +50,19 @@ class Feedico_Sync_Plugin {
 
 	public static function deactivate(): void {
 		wp_clear_scheduled_hook( 'feedico_sync_cron' );
+		wp_unschedule_hook( 'feedico_sync_background' );
+	}
+
+	/**
+	 * Queue a one-off full sync on WP-Cron (separate HTTP request), then try to trigger cron.
+	 * Avoids tying up the admin browser tab and reduces long requests on the main PHP worker.
+	 */
+	public static function queue_background_full_sync(): void {
+		wp_unschedule_hook( 'feedico_sync_background' );
+		wp_schedule_single_event( time() + 2, 'feedico_sync_background' );
+		if ( function_exists( 'spawn_cron' ) ) {
+			spawn_cron();
+		}
 	}
 
 	/**

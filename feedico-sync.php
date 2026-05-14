@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Feedico Sync
  * Description:       Connects to Feedico API, syncs merchants and coupons to the WP database, and shows them on the site via shortcodes.
- * Version:           1.7.0
+ * Version:           1.7.7
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Feedico
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FEEDICO_SYNC_VERSION', '1.7.6' );
+define( 'FEEDICO_SYNC_VERSION', '1.7.7' );
 define( 'FEEDICO_SYNC_FILE', __FILE__ );
 define( 'FEEDICO_SYNC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FEEDICO_SYNC_URL', plugin_dir_url( __FILE__ ) );

@@ -45,7 +45,7 @@ class Feedico_Admin {
 				'strings' => array(
 					'testing'           => __( 'Testing…', 'feedico-sync' ),
 					'testOk'            => __( 'Connection OK.', 'feedico-sync' ),
-					'syncRunning'       => __( 'Sync running… this may take several minutes.', 'feedico-sync' ),
+					'syncRunning'       => __( 'Queuing sync…', 'feedico-sync' ),
 					'syncOk'            => __( 'Sync finished.', 'feedico-sync' ),
 					'syncFail'          => __( 'Sync failed.', 'feedico-sync' ),
 					'requestFailed'     => __( 'Request failed.', 'feedico-sync' ),
@@ -239,12 +239,167 @@ class Feedico_Admin {
 			$sel = isset( $_POST['feedico_networks'] ) && is_array( $_POST['feedico_networks'] )
 				? array_map( 'sanitize_text_field', wp_unslash( $_POST['feedico_networks'] ) )
 				: array();
-			update_option( 'feedico_sync_selected_networks', array_values( array_filter( $sel ) ) );
+			$prev_sel = get_option( 'feedico_sync_selected_networks', array() );
+			if ( ! is_array( $prev_sel ) ) {
+				$prev_sel = array();
+			}
+			$new_sel = array_values( array_filter( $sel ) );
+			update_option( 'feedico_sync_selected_networks', $new_sel );
+
+			$pa = array_map( 'strval', $prev_sel );
+			$na = array_map( 'strval', $new_sel );
+			sort( $pa );
+			sort( $na );
+			if ( $new_sel !== array() && $pa !== $na ) {
+				Feedico_Sync_Plugin::queue_background_full_sync();
+				add_settings_error(
+					'feedico_sync',
+					'queued_sync',
+					__( 'A full sync was queued to run in the background with your new network selection. Refresh this screen in a few minutes to see updated logs.', 'feedico-sync' ),
+					'success'
+				);
+			}
 
 			add_settings_error( 'feedico_sync', 'saved', __( 'Settings saved.', 'feedico-sync' ), 'success' );
 			wp_safe_redirect( admin_url( 'admin.php?page=feedico-sync&settings-updated=1' ) );
 			exit;
 		}
+	}
+
+	/**
+	 * Keep only fields needed for admin cards and network checkboxes (API may embed very large lists).
+	 *
+	 * @param array<string,mixed> $r Raw dashboard JSON.
+	 * @return array<string,mixed>
+	 */
+	private static function slim_dashboard_for_storage( array $r ): array {
+		$slim = array();
+		if ( array_key_exists( 'ok', $r ) ) {
+			$slim['ok'] = $r['ok'];
+		}
+		foreach ( array( 'error', 'message' ) as $k ) {
+			if ( isset( $r[ $k ] ) && is_string( $r[ $k ] ) ) {
+				$slim[ $k ] = $r[ $k ];
+			}
+		}
+
+		if ( isset( $r['profile'] ) && is_array( $r['profile'] ) ) {
+			$prof             = $r['profile'];
+			$slim['profile']  = array();
+			foreach ( array( 'fullName', 'name', 'displayName', 'email', 'planName' ) as $k ) {
+				if ( isset( $prof[ $k ] ) && is_scalar( $prof[ $k ] ) ) {
+					$slim['profile'][ $k ] = $prof[ $k ];
+				}
+			}
+			if ( isset( $prof['plan'] ) && is_array( $prof['plan'] ) && isset( $prof['plan']['name'] ) && is_scalar( $prof['plan']['name'] ) ) {
+				$slim['profile']['plan'] = array( 'name' => $prof['plan']['name'] );
+			}
+		}
+
+		if ( isset( $r['overview'] ) && is_array( $r['overview'] ) ) {
+			$ov                = $r['overview'];
+			$slim['overview']  = array();
+			foreach ( array( 'activeFeeds', 'couponsSynced24h', 'lastSyncLabel', 'lastSyncStatus', 'daysUntilRenewal', 'planRenewalLabel', 'planName' ) as $k ) {
+				if ( ! array_key_exists( $k, $ov ) ) {
+					continue;
+				}
+				$v = $ov[ $k ];
+				if ( is_scalar( $v ) || $v === null ) {
+					$slim['overview'][ $k ] = $v;
+				}
+			}
+			if ( isset( $ov['connectedNetworks'] ) && is_array( $ov['connectedNetworks'] ) ) {
+				$net_keys = array(
+					'id',
+					'networkId',
+					'network_id',
+					'slug',
+					'code',
+					'label',
+					'name',
+					'provider',
+					'subtitle',
+					'description',
+					'tagline',
+					'summary',
+					'caption',
+					'detail',
+					'secondaryLabel',
+					'merchantCount',
+					'couponCount',
+					'lastSyncLabel',
+					'lastSyncStatus',
+				);
+				$nets = array();
+				foreach ( $ov['connectedNetworks'] as $item ) {
+					if ( ! is_array( $item ) ) {
+						continue;
+					}
+					$row = array();
+					foreach ( $net_keys as $nk ) {
+						if ( ! array_key_exists( $nk, $item ) ) {
+							continue;
+						}
+						$vv = $item[ $nk ];
+						if ( is_scalar( $vv ) ) {
+							$row[ $nk ] = $vv;
+						}
+					}
+					if ( $row !== array() ) {
+						$nets[] = $row;
+					}
+				}
+				$slim['overview']['connectedNetworks'] = $nets;
+			}
+		}
+
+		return $slim;
+	}
+
+	/**
+	 * Detect dashboard blobs that would bloat wp_options or slow admin (embedded catalog lists).
+	 *
+	 * @param array<string,mixed> $connected Decoded feedico_sync_last_dashboard.
+	 */
+	private static function dashboard_payload_looks_bloated( array $connected ): bool {
+		if ( isset( $connected['overview'] ) && is_array( $connected['overview'] ) ) {
+			$ov = $connected['overview'];
+			foreach ( array( 'merchants', 'coupons', 'items', 'deals', 'offers', 'feeds' ) as $heavy ) {
+				if ( isset( $ov[ $heavy ] ) && is_array( $ov[ $heavy ] ) && count( $ov[ $heavy ] ) > 50 ) {
+					return true;
+				}
+			}
+			if ( isset( $ov['connectedNetworks'] ) && is_array( $ov['connectedNetworks'] ) ) {
+				foreach ( $ov['connectedNetworks'] as $item ) {
+					if ( ! is_array( $item ) ) {
+						continue;
+					}
+					foreach ( array( 'merchants', 'coupons', 'items', 'deals', 'offers', 'feeds' ) as $heavy ) {
+						if ( isset( $item[ $heavy ] ) && is_array( $item[ $heavy ] ) && $item[ $heavy ] !== array() ) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		$json_check = wp_json_encode( $connected );
+		return is_string( $json_check ) && strlen( $json_check ) > 300000;
+	}
+
+	/**
+	 * One-time shrink of oversized dashboard option (older plugin versions stored the full API body).
+	 *
+	 * @param array<string,mixed> $connected Current decoded option.
+	 * @return array<string,mixed> Possibly replaced payload for render.
+	 */
+	private static function maybe_prune_stored_dashboard( array $connected ): array {
+		if ( ! self::dashboard_payload_looks_bloated( $connected ) ) {
+			return $connected;
+		}
+		$slim = self::slim_dashboard_for_storage( $connected );
+		update_option( 'feedico_sync_last_dashboard', $slim );
+		update_option( 'feedico_sync_network_catalog', self::catalog_from_payload( $slim ) );
+		return $slim;
 	}
 
 	/**
@@ -254,8 +409,9 @@ class Feedico_Admin {
 	 */
 	private static function persist_dashboard_success( array $r ): void {
 		update_option( 'feedico_sync_connection_ok', '1' );
-		update_option( 'feedico_sync_last_dashboard', $r );
-		$catalog = self::catalog_from_payload( $r );
+		$slim = self::slim_dashboard_for_storage( $r );
+		update_option( 'feedico_sync_last_dashboard', $slim );
+		$catalog = self::catalog_from_payload( $slim );
 		update_option( 'feedico_sync_network_catalog', $catalog );
 
 		$raw_sel = get_option( 'feedico_sync_selected_networks', null );
@@ -292,13 +448,16 @@ class Feedico_Admin {
 			update_option( 'feedico_sync_token_enc', Feedico_Crypto::encrypt( $token ) );
 		}
 		self::persist_dashboard_success( $r );
-		$catalog = self::catalog_from_payload( $r );
+		$slim    = get_option( 'feedico_sync_last_dashboard', array() );
+		$slim    = is_array( $slim ) ? $slim : array();
+		$catalog = get_option( 'feedico_sync_network_catalog', array() );
+		$catalog = is_array( $catalog ) ? $catalog : array();
 
 		wp_send_json_success(
 			array(
-				'dashboard'      => $r,
+				'dashboard'      => $slim,
 				'catalog'        => $catalog,
-				'dashboard_html' => self::dashboard_cards_html( $r ),
+				'dashboard_html' => self::dashboard_cards_html( $slim ),
 			)
 		);
 	}
@@ -326,11 +485,14 @@ class Feedico_Admin {
 		}
 
 		self::persist_dashboard_success( $r );
-		$catalog = self::catalog_from_payload( $r );
+		$slim    = get_option( 'feedico_sync_last_dashboard', array() );
+		$slim    = is_array( $slim ) ? $slim : array();
+		$catalog = get_option( 'feedico_sync_network_catalog', array() );
+		$catalog = is_array( $catalog ) ? $catalog : array();
 
 		wp_send_json_success(
 			array(
-				'dashboard_html' => self::dashboard_cards_html( $r ),
+				'dashboard_html' => self::dashboard_cards_html( $slim ),
 				'catalog'        => $catalog,
 			)
 		);
@@ -341,32 +503,18 @@ class Feedico_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Forbidden' ), 403 );
 		}
-		$result = Feedico_Sync_Job::run( 'manual' );
+		Feedico_Sync_Plugin::queue_background_full_sync();
 		$last   = get_option( 'feedico_sync_last_run', array() );
 		$banner = is_array( $last ) ? self::last_sync_banner_html( $last ) : '';
 		$dur    = is_array( $last ) ? self::format_last_sync_duration_min_sec( $last ) : '';
 
-		if ( $result['ok'] ) {
-			$msg = $result['message'];
-			if ( ! empty( $result['stats'] ) ) {
-				$msg .= ' ' . self::format_stats_line( $result['stats'] );
-			}
-			wp_send_json_success(
-				array(
-					'message'              => $msg,
-					'stats'                => $result['stats'] ?? array(),
-					'banner_html'          => $banner,
-					'last_sync_duration'   => $dur,
-				)
-			);
-		}
-
-		wp_send_json_error(
+		wp_send_json_success(
 			array(
-				'message'            => $result['message'],
-				'stats'              => $result['stats'] ?? array(),
-				'banner_html'        => $banner,
-				'last_sync_duration' => $dur,
+				'queued'               => true,
+				'message'              => __( 'Full sync has been queued. It runs in the background via WP-Cron; refresh this page in a few minutes to see the latest log and banner.', 'feedico-sync' ),
+				'stats'                => array(),
+				'banner_html'          => $banner,
+				'last_sync_duration'   => $dur,
 			)
 		);
 	}
@@ -397,20 +545,6 @@ class Feedico_Admin {
 		}
 		/* translators: %s: seconds with decimal, for runs under one second */
 		return sprintf( __( '%s sec', 'feedico-sync' ), number_format_i18n( $sec, 1 ) );
-	}
-
-	/**
-	 * @param array<string,int> $stats
-	 */
-	private static function format_stats_line( array $stats ): string {
-		$parts = array();
-		foreach ( array( 'merchants_upserted', 'coupons_upserted', 'merchants_passive', 'coupons_passive', 'merchant_pages', 'coupon_pages' ) as $k ) {
-			if ( isset( $stats[ $k ] ) ) {
-				/* translators: 1: label 2: number */
-				$parts[] = sprintf( __( '%1$s: %2$s', 'feedico-sync' ), $k, number_format_i18n( (int) $stats[ $k ] ) );
-			}
-		}
-		return implode( ' · ', $parts );
 	}
 
 	/**
@@ -777,6 +911,7 @@ class Feedico_Admin {
 		$sel_flip  = array_flip( array_map( 'strval', $selected ) );
 		$dashboard = get_option( 'feedico_sync_last_dashboard', array() );
 		$connected = is_array( $dashboard ) ? $dashboard : array();
+		$connected = self::maybe_prune_stored_dashboard( $connected );
 		$next_cron = wp_next_scheduled( 'feedico_sync_cron' );
 		$logs      = Feedico_DB::get_recent_logs( 30 );
 		$last_run  = get_option( 'feedico_sync_last_run', array() );
