@@ -11,6 +11,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 if ( defined( 'FEEDICO_SYNC_DELETE_DATA' ) && FEEDICO_SYNC_DELETE_DATA ) {
 	global $wpdb;
+	$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . 'feedico_sync_seen' );
 	$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . 'feedico_merchants' );
 	$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . 'feedico_coupons' );
 	$wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . 'feedico_sync_log' );
@@ -44,6 +45,8 @@ $keys = array(
 foreach ( $keys as $k ) {
 	delete_option( $k );
 }
+delete_option( 'feedico_sync_slice_state' );
+delete_transient( 'feedico_sync_run_lock' );
 
 wp_clear_scheduled_hook( 'feedico_sync_cron' );
 wp_unschedule_hook( 'feedico_sync_background' );

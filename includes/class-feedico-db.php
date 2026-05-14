@@ -29,6 +29,11 @@ class Feedico_DB {
 		return $wpdb->prefix . 'feedico_sync_log';
 	}
 
+	public static function seen_table(): string {
+		global $wpdb;
+		return $wpdb->prefix . 'feedico_sync_seen';
+	}
+
 	public static function create_tables(): void {
 		global $wpdb;
 
@@ -104,8 +109,30 @@ class Feedico_DB {
 		$wpdb->query( $sql_m );
 		$wpdb->query( $sql_c );
 		$wpdb->query( $sql_l );
+		self::create_seen_table_if_missing();
 		self::invalidate_table_columns_cache( $m );
 		self::invalidate_table_columns_cache( $c );
+	}
+
+	/**
+	 * Session table for one sync run (IDs seen in API) so passive marking works across time-sliced requests.
+	 */
+	public static function create_seen_table_if_missing(): void {
+		global $wpdb;
+		$s = self::seen_table();
+		if ( self::table_exists( $s ) ) {
+			return;
+		}
+		$charset = $wpdb->get_charset_collate();
+		$sql     = "CREATE TABLE IF NOT EXISTS {$s} (
+			run_id varchar(32) NOT NULL,
+			kind varchar(16) NOT NULL,
+			entity_id varchar(191) NOT NULL,
+			PRIMARY KEY (run_id, kind, entity_id),
+			KEY idx_run_kind (run_id, kind)
+		) {$charset};";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- internal table name.
+		$wpdb->query( $sql );
 	}
 
 	/**
@@ -131,6 +158,7 @@ class Feedico_DB {
 			$wpdb->query( "ALTER TABLE `{$c}` ADD COLUMN wp_manual_override tinyint(1) NOT NULL DEFAULT 0 AFTER wp_feedico_active" );
 			self::invalidate_table_columns_cache( $c );
 		}
+		self::create_seen_table_if_missing();
 	}
 
 	private static function table_exists( string $table ): bool {
@@ -500,11 +528,6 @@ class Feedico_DB {
 	}
 
 	/**
-	 * Mark merchants for this provider not in $keep_ids as inactive (not deleted).
-	 *
-	 * @param array<int,string> $keep_ids
-	 */
-	/**
 	 * Mark merchants for this provider not in $keep_ids as inactive. Returns ids that were set passive.
 	 *
 	 * @param array<int,string> $keep_ids
@@ -534,6 +557,123 @@ class Feedico_DB {
 		}
 		self::batch_set_passive_by_ids( $table, $to_pass );
 		return $to_pass;
+	}
+
+	/**
+	 * Clear seen rows (between full sync runs).
+	 */
+	public static function truncate_sync_seen(): void {
+		global $wpdb;
+		$t = self::seen_table();
+		if ( ! self::table_exists( $t ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
+		$wpdb->query( "TRUNCATE TABLE `{$t}`" );
+		if ( ! empty( $wpdb->last_error ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "DELETE FROM `{$t}`" );
+		}
+	}
+
+	/**
+	 * @param array<int,string> $entity_ids
+	 */
+	public static function insert_sync_seen_batch( string $run_id, string $kind, array $entity_ids ): void {
+		global $wpdb;
+		if ( $run_id === '' || $entity_ids === array() ) {
+			return;
+		}
+		$t = self::seen_table();
+		if ( ! self::table_exists( $t ) ) {
+			self::create_seen_table_if_missing();
+		}
+		$kind = $kind === 'coupon' ? 'coupon' : 'merchant';
+		foreach ( array_chunk( array_values( array_unique( array_map( 'strval', $entity_ids ) ) ), 150 ) as $chunk ) {
+			if ( $chunk === array() ) {
+				continue;
+			}
+			$parts = array();
+			foreach ( $chunk as $eid ) {
+				if ( $eid === '' ) {
+					continue;
+				}
+				$parts[] = $wpdb->prepare( '(%s,%s,%s)', $run_id, $kind, $eid );
+			}
+			if ( $parts === array() ) {
+				continue;
+			}
+			$sql = "INSERT IGNORE INTO `{$t}` (run_id, kind, entity_id) VALUES " . implode( ',', $parts );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- VALUES built from prepare fragments.
+			$wpdb->query( $sql );
+		}
+	}
+
+	/**
+	 * Active merchants for this provider not listed in seen for this run → passive.
+	 *
+	 * @return array<int,string> ids set passive
+	 */
+	public static function mark_merchants_passive_vs_seen( string $provider, string $run_id ): array {
+		global $wpdb;
+		if ( $provider === '' || $run_id === '' ) {
+			return array();
+		}
+		$m = self::merchants_table();
+		$s = self::seen_table();
+		if ( ! self::table_exists( $m ) || ! self::table_exists( $s ) ) {
+			return array();
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names from prefix helpers.
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT m.id FROM `{$m}` m
+				WHERE m.provider = %s AND m.wp_feedico_active = 1
+				AND NOT EXISTS (
+					SELECT 1 FROM `{$s}` x WHERE x.run_id = %s AND x.kind = 'merchant' AND x.entity_id = m.id
+				)",
+				$provider,
+				$run_id
+			)
+		);
+		if ( ! is_array( $ids ) || $ids === array() ) {
+			return array();
+		}
+		self::batch_set_passive_by_ids( $m, $ids );
+		return $ids;
+	}
+
+	/**
+	 * Active coupons not listed in seen for this run → passive.
+	 *
+	 * @return array<int,string> ids set passive
+	 */
+	public static function mark_coupons_passive_vs_seen( string $run_id ): array {
+		global $wpdb;
+		if ( $run_id === '' ) {
+			return array();
+		}
+		$c = self::coupons_table();
+		$s = self::seen_table();
+		if ( ! self::table_exists( $c ) || ! self::table_exists( $s ) ) {
+			return array();
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names from prefix helpers.
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT c.id FROM `{$c}` c
+				WHERE c.wp_feedico_active = 1
+				AND NOT EXISTS (
+					SELECT 1 FROM `{$s}` x WHERE x.run_id = %s AND x.kind = 'coupon' AND x.entity_id = c.id
+				)",
+				$run_id
+			)
+		);
+		if ( ! is_array( $ids ) || $ids === array() ) {
+			return array();
+		}
+		self::batch_set_passive_by_ids( $c, $ids );
+		return $ids;
 	}
 
 	/**

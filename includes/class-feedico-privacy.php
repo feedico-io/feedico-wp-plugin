@@ -24,6 +24,7 @@ class Feedico_Privacy {
 			'feedico_sync_cron_custom_minutes',
 			'feedico_sync_connection_ok',
 			'feedico_sync_last_run',
+			'feedico_sync_slice_state',
 		);
 	}
 
@@ -112,6 +113,8 @@ class Feedico_Privacy {
 		}
 
 		wp_clear_scheduled_hook( 'feedico_sync_cron' );
+		wp_unschedule_hook( 'feedico_sync_background' );
+		delete_transient( 'feedico_sync_run_lock' );
 
 		return array(
 			'items_removed'  => $items !== array(),
