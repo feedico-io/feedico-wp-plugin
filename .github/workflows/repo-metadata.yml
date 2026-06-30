@@ -1,12 +1,10 @@
 name: Set repository metadata
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  administration: write
 
 jobs:
   metadata:
