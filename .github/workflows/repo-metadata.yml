@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  administration: write
   contents: read
+  metadata: write
 
 jobs:
   metadata:
@@ -16,9 +16,16 @@ jobs:
       - name: Configure description, homepage, and topics
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          gh api repos/${{ github.repository }} -X PATCH \
-            -f description='Official WordPress plugin: sync Feedico merchants & coupons, shortcodes & Gutenberg blocks. Docs: feedico.io/docs' \
-            -f homepage='https://feedico.io'
-          gh api repos/${{ github.repository }}/topics -X PUT \
-            -f names='["feedico","wordpress","wordpress-plugin","coupons","merchants","affiliate","affiliate-marketing","coupon-api","gutenberg","sync"]'
+          curl -fsSL -X PATCH \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}" \
+            -d '{"description":"Official WordPress plugin: sync Feedico merchants & coupons, shortcodes & Gutenberg blocks. Docs: feedico.io/docs","homepage":"https://feedico.io"}'
+
+          curl -fsSL -X PUT \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/topics" \
+            -d '{"names":["feedico","wordpress","wordpress-plugin","coupons","merchants","affiliate","affiliate-marketing","coupon-api","gutenberg","sync"]}'
