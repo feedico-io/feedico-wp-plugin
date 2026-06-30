@@ -8,28 +8,18 @@ on:
 permissions:
   contents: read
   metadata: write
-  administration: write
 
 jobs:
   metadata:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure description, homepage, and topics
+      - name: Configure repository About section
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
         run: |
-          set -x
-          curl -sS -X PATCH \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${REPO}" \
-            -d '{"description":"Official WordPress plugin: sync Feedico merchants & coupons, shortcodes & Gutenberg blocks. Docs: feedico.io/docs","homepage":"https://feedico.io"}'
+          gh api --method PATCH "repos/${{ github.repository }}" \
+            -f description='Official WordPress plugin: sync Feedico merchants & coupons, shortcodes & Gutenberg blocks. Docs: feedico.io/docs' \
+            -f homepage='https://feedico.io'
 
-          curl -sS -X PUT \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github.mercy-preview+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${REPO}/topics" \
-            -d '{"names":["feedico","wordpress","wordpress-plugin","coupons","merchants","affiliate","affiliate-marketing","coupon-api","gutenberg","sync"]}'
+          echo '{"names":["feedico","wordpress","wordpress-plugin","coupons","merchants","affiliate","affiliate-marketing","coupon-api","gutenberg","sync"]}' \
+            | gh api --method PUT "repos/${{ github.repository }}/topics" --input -
