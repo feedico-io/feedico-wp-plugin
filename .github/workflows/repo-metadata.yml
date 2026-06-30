@@ -1,0 +1,24 @@
+name: Set repository metadata
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  administration: write
+  contents: read
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure description, homepage, and topics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }} -X PATCH \
+            -f description='Official WordPress plugin: sync Feedico merchants & coupons, shortcodes & Gutenberg blocks. Docs: feedico.io/docs' \
+            -f homepage='https://feedico.io'
+          gh api repos/${{ github.repository }}/topics -X PUT \
+            -f names='["feedico","wordpress","wordpress-plugin","coupons","merchants","affiliate","affiliate-marketing","coupon-api","gutenberg","sync"]'
