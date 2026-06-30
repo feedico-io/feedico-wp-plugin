@@ -5,17 +5,41 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   metadata:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure repository About section
+      - name: Set description and homepage
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api --method PATCH "repos/${{ github.repository }}" \
-            -f description='Official WordPress plugin: sync Feedico merchants & coupons, shortcodes & Gutenberg blocks. Docs: feedico.io/docs' \
-            -f homepage='https://feedico.io'
+          gh api --method PATCH "repos/${{ github.repository }}" --input - <<'EOF'
+          {
+            "description": "Official WordPress plugin: sync Feedico merchants and coupons, shortcodes and Gutenberg blocks. Docs: feedico.io/docs",
+            "homepage": "https://feedico.io"
+          }
+          EOF
 
-          echo '{"names":["feedico","wordpress","wordpress-plugin","coupons","merchants","affiliate","affiliate-marketing","coupon-api","gutenberg","sync"]}' \
-            | gh api --method PUT "repos/${{ github.repository }}/topics" --input -
+      - name: Set topics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method PUT "repos/${{ github.repository }}/topics" --input - <<'EOF'
+          {
+            "names": [
+              "feedico",
+              "wordpress",
+              "wordpress-plugin",
+              "coupons",
+              "merchants",
+              "affiliate",
+              "affiliate-marketing",
+              "coupon-api",
+              "gutenberg",
+              "sync"
+            ]
+          }
+          EOF
